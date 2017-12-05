@@ -1,6 +1,6 @@
 # GeoForum
 
-*A REST API that serves as a backend to the GeoForum Aplication*
+*A REST API that serves as a backend to the GeoForum Application*
 
 ## Table of Contents
 
