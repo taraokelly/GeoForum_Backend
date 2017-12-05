@@ -6,7 +6,13 @@ const Post = require('./models/post');
 // Set up express.js app.
 const app = express();
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost/forumposts');
+mongoose.connect('mongodb://localhost/forumposts', function(error) {
+    if (error) {
+        console.err(error);
+    } else {
+        console.log('Connected');
+    }    
+});
 // Use nodes Promise - mongooses is depricated.
 mongoose.Promise = global.Promise;
 //app.use(bodyParser.urlencoded({ extended: true }));
