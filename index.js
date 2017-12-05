@@ -18,14 +18,40 @@ mongoose.Promise = global.Promise;
 //app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// Routes:
+
 app.get('/', function(req,res){
-    res.send({type:'GET'});
+    if(req.query.lng && req.query.lat){
+        // Use Mongo's function geoNear to get the posts within 100000 metres of the specified location
+        Post.geoNear(
+            {
+                type:'Point', 
+                coordinates: [parseFloat(req.query.lng), parseFloat(req.query.lat)] 
+            },
+            {
+                maxDistance:100000, spherical:true
+            }
+        ).then(function(posts){
+            res.send(posts);
+        });
+    }
+    else{
+        // Use Mongo's function find will return all the users in the database
+        Post.find(function(error, posts) {
+            if (error) return response.send(error);
+            else return res.json(posts);
+        });
+    }
 });
 
 app.post('/', function(req,res){
     Post.create({
         content: req.body.content,
-        date: new Date()
+        date: new Date(),
+        geometry: {
+            type: req.body.type, 
+            coordinates: [req.body.lng, req.body.lat]
+        }
     }).then(function(post){
         res.send(post);
     }).catch(function(error){
@@ -50,14 +76,6 @@ app.delete('/:id', function(req,res){
 // Listen for requests - use environment port or 4000.
 app.listen( process.env.port || 4000, function(){
     console.log('Listening');
-});
-
-app.get('/api/', function(req,res){
-    // MongoDb find will return all the users in the database
-    Post.find(function(error, posts) {
-        if (error) return response.send(error);
-        return res.json(posts);
-    });
 });
 
 // For lazy loading
