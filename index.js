@@ -19,7 +19,6 @@ mongoose.Promise = global.Promise;
 app.use(bodyParser.json());
 
 app.get('/', function(req,res){
-    console.log('Name :'+req.body.name);
     res.send({type:'GET'});
 });
 
@@ -29,6 +28,8 @@ app.post('/', function(req,res){
         date: new Date()
     }).then(function(post){
         res.send(post);
+    }).catch(function(error){
+        res.status(422).send({error: error._message});
     });
 });
 
@@ -37,12 +38,26 @@ app.put('/:id', function(req,res){
 });
 
 app.delete('/:id', function(req,res){
-    res.send({type:'DELETE'});
+    console.log(req.params.id);
+    Post.findByIdAndRemove({
+        _id: req.params.id
+    }).then(function(error, post){
+        if (error) return res.send(error);
+        else return res.send(post);
+    });
 });
 
 // Listen for requests - use environment port or 4000.
 app.listen( process.env.port || 4000, function(){
     console.log('Listening');
+});
+
+app.get('/api/', function(req,res){
+    // MongoDb find will return all the users in the database
+    Post.find(function(error, posts) {
+        if (error) return response.send(error);
+        return res.json(posts);
+    });
 });
 
 // For lazy loading
