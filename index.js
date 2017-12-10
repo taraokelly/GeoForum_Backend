@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const Post = require('./models/post');
 // Set up express.js app.
 const app = express();
-// Connect to MongoDB
+// Connect to MongoDB.
 mongoose.connect('mongodb://localhost/forumposts', function(error) {
     if (error) {
         console.err(error);
@@ -13,63 +13,119 @@ mongoose.connect('mongodb://localhost/forumposts', function(error) {
         console.log('Connected');
     }    
 });
-// Use nodes Promise - mongooses is depricated.
+// Use nodes Promise - mongoose's Promise is depricated.
 mongoose.Promise = global.Promise;
 //app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Routes:
 
+// Root - get
 app.get('/', function(req,res){
+    console.log("GET");
+    // If location is specified - get posts submitted nearby
     if(req.query.lng && req.query.lat){
-        // Use Mongo's function geoNear to get the posts within 100000 metres of the specified location
-        Post.geoNear(
-            {
-                type:'Point', 
-                coordinates: [parseFloat(req.query.lng), parseFloat(req.query.lat)] 
-            },
-            {
-                maxDistance:100000, spherical:true
-            }
-        ).then(function(posts){
-            res.send(posts);
+        var ids = [];
+        var d = new Date(2017, 8, 1, 0, 0, 0)
+        // https://stackoverflow.com/questions/22080770/i-need-to-create-url-for-get-which-is-going-to-accept-array-how-in-node-js-expr
+        if(req.query.id instanceof Array)
+            var ids = req.query.id;
+        else if(req.query.id)
+            var ids = [req.query.id]; //["XHPPSq3Kdy"];
+        else 
+            var ids = [];
+        if(req.query.yr && req.query.m && req.query.d && req.query.hr && req.query.mins && req.query.s)
+            var d = new Date(parseInt(req.query.yr), parseInt(req.query.m), parseInt(req.query.d), parseInt(req.query.hr), parseInt(req.query.mins), parseInt(req.query.s))
+        // https://docs.mongodb.com/v3.2/reference/command/geoNear/
+        // Use Mongo's aggregate function to embed a $nin query to weed out previously seen posts in
+        // the geoNear function to get the posts within 100000 metres of the specified location. 
+
+        // To lazy load we are sending the date of the last post that the user has (if there is one),
+        // we will minus one milli second and search for anything after that time - using $gte on the date attribute.
+        
+        // We will also send the id(s) of the post(s) with that have this last time and ignore them - using $nin to ignore the ids already seen with that date
+        Post.aggregate([{
+            $geoNear: {
+                query: { lazy_load: {$nin: ids}, date: { $gte : d }},
+                near : {
+                    type: "Point",
+                    coordinates: [ parseFloat(req.query.lng),  parseFloat(req.query.lat)]
+                },
+                distanceField: "dis",
+                maxDistance: 100000,
+                spherical :true
+            }, 
+        },{ $sort: { dis: 1, date: -1 } }, {$limit : 10}],function(error, posts){
+            if (error) return res.send(error);
+            else res.send(posts);
         });
     }
+    // Else - send all.
     else{
-        // Use Mongo's function find will return all the users in the database
+        // Use Mongo's function find will return all the posts in the database
         Post.find(function(error, posts) {
-            if (error) return response.send(error);
+            if (error) return res.send(error);
             else return res.json(posts);
         });
     }
 });
 
+// Root - post
 app.post('/', function(req,res){
-    Post.create({
-        content: req.body.content,
-        date: new Date(),
-        geometry: {
-            type: req.body.type, 
-            coordinates: [req.body.lng, req.body.lat]
+    // https://github.com/ImErvin/Groupd-BackEnd/blob/master/API/apiServer.js#L31
+    function generateId(){
+        var text = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+        for (var i = 0; i < 10; i++){
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
         }
-    }).then(function(post){
-        res.send(post);
-    }).catch(function(error){
-        res.status(422).send({error: error._message});
-    });
+        return text;
+    }
+    function createPost(id){
+        Post.find({lazy_load: id}, function(error, result){
+            if (error) return response.send(error);
+            if(!result.length){
+                // Use Mongo's function create a post in the database
+                Post.create({
+                    content: req.body.content,
+                    lazy_load: id,
+                    date: new Date(),
+                    geometry: {
+                        type: req.body.type, 
+                        coordinates: [req.body.lng, req.body.lat]
+                    }
+                }).then(function(post){
+                    res.send(post);
+                }).catch(function(error){
+                    res.status(422).send({error: error.message});
+                });
+            }else{
+                createPost(generateId());
+            }
+       });
+    }
+    createPost(generateId());
 });
 
-app.put('/:id', function(req,res){
-    res.send({type:'PUT'});
-});
-
+// Root - delete
 app.delete('/:id', function(req,res){
-    console.log(req.params.id);
-    Post.findByIdAndRemove({
+    // Use Mongo's function to delete a post with the specified unique ID (mongo's automatic _id) in the database.
+    /*Post.findByIdAndRemove({
         _id: req.params.id
     }).then(function(error, post){
         if (error) return res.send(error);
         else return res.send(post);
+    });*/
+    Post.find(function(error, posts) {
+        if (error) { res.sendStatus(500); return; }
+
+        posts.forEach( function (doc) {
+
+            doc.remove();
+          });
+        //console.log(flux.type) ;
+        res.send(posts);
     });
 });
 
