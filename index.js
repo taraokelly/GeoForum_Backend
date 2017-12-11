@@ -26,7 +26,7 @@ app.get('/', function(req,res){
     // If location is specified - get posts submitted nearby
     if(req.query.lng && req.query.lat){
         var ids = [];
-        var d = new Date(2017, 8, 1, 0, 0, 0)
+        var d = new Date()
         // https://stackoverflow.com/questions/22080770/i-need-to-create-url-for-get-which-is-going-to-accept-array-how-in-node-js-expr
         if(req.query.id instanceof Array)
             var ids = req.query.id;
@@ -46,7 +46,7 @@ app.get('/', function(req,res){
         // We will also send the id(s) of the post(s) with that have this last time and ignore them - using $nin to ignore the ids already seen with that date
         Post.aggregate([{
             $geoNear: {
-                query: { lazy_load: {$nin: ids}, date: { $gte : d }},
+                query: { lazy_load: {$nin: ids}, date: { $lte : d }},
                 near : {
                     type: "Point",
                     coordinates: [ parseFloat(req.query.lng),  parseFloat(req.query.lat)]
@@ -55,7 +55,7 @@ app.get('/', function(req,res){
                 maxDistance: 100000,
                 spherical :true
             }, 
-        },{ $sort: { dis: 1, date: -1 } }, {$limit : 10}],function(error, posts){
+        },{ $sort: { date: -1 } }, {$limit : 10}],function(error, posts){
             if (error) return res.send(error);
             else res.send(posts);
         });
@@ -92,8 +92,8 @@ app.post('/', function(req,res){
                     lazy_load: id,
                     date: new Date(),
                     geometry: {
-                        type: req.body.type, 
-                        coordinates: [req.body.lng, req.body.lat]
+                        type: "Point", 
+                        coordinates: [req.body.geometry.coordinates[0], req.body.geometry.coordinates[1]]
                     }
                 }).then(function(post){
                     res.send(post);
@@ -108,33 +108,7 @@ app.post('/', function(req,res){
     createPost(generateId());
 });
 
-// Root - delete
-app.delete('/:id', function(req,res){
-    // Use Mongo's function to delete a post with the specified unique ID (mongo's automatic _id) in the database.
-    /*Post.findByIdAndRemove({
-        _id: req.params.id
-    }).then(function(error, post){
-        if (error) return res.send(error);
-        else return res.send(post);
-    });*/
-    Post.find(function(error, posts) {
-        if (error) { res.sendStatus(500); return; }
-
-        posts.forEach( function (doc) {
-
-            doc.remove();
-          });
-        //console.log(flux.type) ;
-        res.send(posts);
-    });
-});
-
 // Listen for requests - use environment port or 4000.
 app.listen( process.env.port || 4000, function(){
     console.log('Listening');
 });
-
-// For lazy loading
-// https://stackoverflow.com/questions/24689344/lazy-loading-more-data-scroll-in-mongoose-nodejs
-
-// db.test.ensure_index("Age", pymongo.DESCENDING)
