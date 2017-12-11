@@ -22,7 +22,6 @@ app.use(bodyParser.json());
 
 // Root - get
 app.get('/', function(req,res){
-    console.log("GET");
     // If location is specified - get posts submitted nearby
     if(req.query.lng && req.query.lat){
         var ids = [];
@@ -55,7 +54,7 @@ app.get('/', function(req,res){
                 maxDistance: 100000,
                 spherical :true
             }, 
-        },{ $sort: { date: -1 } }, {$limit : 10}],function(error, posts){
+        },{ $sort: { date: -1 } }, {$limit : 25}],function(error, posts){
             if (error) return res.send(error);
             else res.send(posts);
         });
