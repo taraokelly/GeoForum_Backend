@@ -5,6 +5,7 @@
 ## Table of Contents
 
 + [User Guide](#user-guide)
++ [Deployment Guide](#deployment-guide)
 
 ## User Guide
 
@@ -63,9 +64,10 @@ Again, you should be in the root directory of the cloned repository.
 ```
 node index
 ```
+
 ## Deployment Guide
 
-This deployment tutorial uses [Heroku](https://www.heroku.com/). A Heroku account (it's free :) ) and the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) is needed.
+This deployment tutorial uses [Heroku](https://www.heroku.com/). A Heroku account, it's free :), and the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) is needed.
 
 Checkout this [branch](https://github.com/taraokelly/GeoForum_Backend/tree/HEROKU-deployment):
 
