@@ -6,7 +6,7 @@ const Post = require('./models/post');
 // Set up express.js app.
 const app = express();
 // Connect to MongoDB.
-mongoose.connect('mongodb://localhost/forumposts', function(error) {
+mongoose.connect(process.env.MONGODB_URI, function(error) {
     if (error) {
         console.err(error);
     } else {
@@ -107,7 +107,7 @@ app.post('/', function(req,res){
     createPost(generateId());
 });
 
-// Listen for requests - use environment port or 4000.
-app.listen( process.env.port || 4000, function(){
+// Listen for requests - use environment port or 3000.
+app.listen( process.env.PORT || 3000, function(){
     console.log('Listening');
 });
