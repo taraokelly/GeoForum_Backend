@@ -63,3 +63,28 @@ Again, you should be in the root directory of the cloned repository.
 ```
 node index
 ```
+## Deployment Guide
+
+This deployment tutorial uses [Heroku](https://www.heroku.com/). A Heroku account (it's free :) ) and the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) is needed.
+
+Checkout this [branch](https://github.com/taraokelly/GeoForum_Backend/tree/HEROKU-deployment):
+
+Then run the following commands:
+
+```
+git init
+
+heroku login
+  [email]
+  [password]
+
+heroku create [name]
+
+heroku addons: create mongolab
+
+git add .
+
+git commit -m "[commit msg]"
+
+git push heroku master
+```
